@@ -1,0 +1,4 @@
+taxi_game.db
+__pycache__/
+*.pyc
+.env
