@@ -11,7 +11,7 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-BOT_TOKEN = "ВАШ_ТОКЕН_СЮДА"
+BOT_TOKEN = "8794550492:AAE-uTrSsHtRHXgnNYlsn-ZO2mRjphKv2do"
 DB_NAME = "taxi_game.db"
 START_BALANCE = 5000
 DAILY_REWARD = 1000
