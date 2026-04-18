@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Таксист - Машины</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+        .car-card {
+            background: #16213e;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border-left: 4px solid #e94560;
+        }
+        .car-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e94560;
+            margin-bottom: 10px;
+        }
+        .car-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+        .buy-button {
+            background: #e94560;
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .buy-button:hover {
+            background: #d13b54;
+        }
+        .balance {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="balance">💰 Баланс: <span id="balance">12 500 $</span></div>
+    
+    <div class="car-card" id="car-1">
+        <div class="car-name">🚗 Жигули (ID: 1)</div>
+        <div class="car-stats">
+            <span>💰 доход: 10-30$</span>
+            <span>⛽ бак: 40л</span>
+            <span>📊 расход: 2л</span>
+        </div>
+        <div class="car-stats">
+            <span>💵 цена: 5 000$</span>
+            <span>🔧 топливо: 40/40 л</span>
+        </div>
+        <button class="buy-button" onclick="buyCar(1)">🏎 Купить Жигули</button>
+    </div>
+
+    <div class="car-card" id="car-2">
+        <div class="car-name">🚙 Лада Веста (ID: 2)</div>
+        <div class="car-stats">
+            <span>💰 доход: 40-80$</span>
+            <span>⛽ бак: 50л</span>
+            <span>📊 расход: 2л</span>
+        </div>
+        <div class="car-stats">
+            <span>💵 цена: 20 000$</span>
+            <span>🔧 топливо: 50/50 л</span>
+        </div>
+        <button class="buy-button" onclick="buyCar(2)">🏎 Купить Ладу Веста</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // разворачиваем на весь экран
+
+        // Функция покупки (отправляет данные боту)
+        function buyCar(carId) {
+            tg.HapticFeedback.impactOccurred('medium'); // вибрация
+            
+            // Отправляем данные в чат с ботом
+            tg.sendData(JSON.stringify({
+                action: 'buy_car',
+                car_id: carId
+            }));
+            
+            // Показываем уведомление
+            tg.showAlert(`Покупка машины ID ${carId} отправлена!`);
+        }
+
+        // Получаем данные из Telegram (initData)
+        const initData = tg.initData;
+        console.log('Init Data:', initData);
+        
+        // Здесь потом будет запрос к API для получения реального баланса
+    </script>
+</body>
+</html>
