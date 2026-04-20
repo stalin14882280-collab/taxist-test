@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Таксист – Центр управления</title>
+    <title>Таксист – Завод и Кейсы</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -14,25 +14,30 @@
         }
 
         body {
-            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
             background: linear-gradient(145deg, #1a1a0e 0%, #2a2418 100%);
             color: #f5e6c4;
+            padding: 20px;
+            padding-bottom: 30px;
             min-height: 100vh;
-            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         /* Верхняя панель */
         .top-bar {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 217, 102, 0.3);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 80px;
+            padding: 8px 16px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 217, 102, 0.3);
         }
 
         .balance-box {
@@ -62,7 +67,6 @@
             border-radius: 40px;
             cursor: pointer;
             transition: 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         .withdraw-btn:active {
@@ -70,29 +74,7 @@
             background: #c99f1a;
         }
 
-        /* Контент */
-        .content {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Секции (вкладки) */
-        .section {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Кликер-карточка (центральная) */
+        /* Кликер карточка */
         .clicker-card {
             background: rgba(42, 36, 24, 0.8);
             backdrop-filter: blur(8px);
@@ -100,27 +82,22 @@
             padding: 30px 20px;
             text-align: center;
             margin-bottom: 25px;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
             border: 1px solid rgba(255, 217, 102, 0.4);
-        }
-
-        .click-area {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
         }
 
         .click-circle {
-            width: 220px;
-            height: 220px;
+            width: 200px;
+            height: 200px;
             background: radial-gradient(circle at 35% 35%, #f3bc5c, #c47d2e);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            margin: 0 auto 20px;
             transition: 0.07s linear;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,200,0.6);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
             border: 3px solid #ffd966;
         }
 
@@ -129,7 +106,7 @@
         }
 
         .factory-icon {
-            font-size: 100px;
+            font-size: 90px;
             filter: drop-shadow(4px 8px 12px black);
         }
 
@@ -141,7 +118,6 @@
             gap: 8px;
             padding: 8px 24px;
             border-radius: 40px;
-            margin-top: 10px;
             border: 1px solid #ffd966;
         }
 
@@ -151,8 +127,18 @@
             font-size: 1.6rem;
         }
 
-        /* Секция работы (такси) */
-        .work-card, .garage-card, .bank-card {
+        .upgrade-note {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            background: #2a2418;
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 30px;
+            color: #aaa;
+        }
+
+        /* Секция кейсов */
+        .cases-section {
             background: rgba(42, 36, 24, 0.8);
             backdrop-filter: blur(8px);
             border-radius: 48px;
@@ -173,198 +159,147 @@
             padding-left: 15px;
         }
 
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 10px;
-        }
-
-        .action-btn {
-            background: #3d3522;
-            border: 1px solid #5e4f32;
-            border-radius: 40px;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.1s;
-            font-weight: bold;
-            color: #ffd966;
-        }
-
-        .action-btn:active {
-            transform: scale(0.97);
-            background: #4f422a;
-        }
-
-        /* Список машин в гараже */
-        .car-list {
-            margin-top: 10px;
-        }
-
-        .car-item {
+        .case-card {
             background: #2a2418;
-            border-radius: 28px;
-            padding: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #5e4f32;
+            border-radius: 40px;
+            padding: 15px;
+            margin-bottom: 15px;
         }
 
-        .car-name {
+        .case-price {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .case-price span {
+            color: #ffd966;
             font-weight: bold;
         }
 
-        .car-fuel {
-            font-size: 0.8rem;
-            color: #ffd966;
+        .open-case-btn {
+            background: #e6b422;
+            border: none;
+            color: #1e1a0c;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
         }
 
-        /* Анимация всплывающей суммы */
+        .open-case-btn:active {
+            transform: scale(0.97);
+        }
+
+        .result-area {
+            background: #3d3522;
+            border-radius: 32px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        .claim-btn {
+            background: #5e4f32;
+            border: none;
+            color: #ffd966;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .disabled-case {
+            opacity: 0.6;
+            filter: grayscale(0.2);
+            cursor: not-allowed;
+        }
+
+        .instruction {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-top: 15px;
+            text-align: center;
+        }
+
         .floating-number {
             position: fixed;
             pointer-events: none;
             font-weight: bold;
-            font-size: 2rem;
+            font-size: 1.8rem;
             color: #ffd966;
-            text-shadow: 0 0 8px #b87c1a;
+            text-shadow: 0 0 5px black;
             z-index: 1000;
             animation: floatUp 0.6s ease-out forwards;
         }
 
         @keyframes floatUp {
             0% { opacity: 1; transform: translateY(0px) scale(1); }
-            100% { opacity: 0; transform: translateY(-100px) scale(1.3); }
-        }
-
-        /* Нижняя навигация */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(15px);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 20px 20px;
-            border-top: 1px solid rgba(255, 217, 102, 0.3);
-            z-index: 20;
-        }
-
-        .nav-item {
-            text-align: center;
-            cursor: pointer;
-            padding: 8px 0;
-            flex: 1;
-            border-radius: 40px;
-            transition: 0.2s;
-            color: #aaa;
-        }
-
-        .nav-item.active {
-            background: #3d3522;
-            color: #ffd966;
-        }
-
-        .nav-icon {
-            font-size: 1.8rem;
-            display: block;
-        }
-
-        .nav-label {
-            font-size: 0.7rem;
-            margin-top: 4px;
+            100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
         }
     </style>
 </head>
 <body>
-<div class="top-bar">
-    <div class="balance-box">💰 <span id="balance">0</span> $</div>
-    <div class="withdraw-buttons">
-        <button class="withdraw-btn" id="withdraw15Btn">⭐ 15</button>
-        <button class="withdraw-btn" id="withdraw25Btn">⭐ 25</button>
-    </div>
-</div>
-
-<div class="content">
-    <!-- Секция: Кликер (по умолчанию активна) -->
-    <div id="clickerSection" class="section active">
-        <div class="clicker-card">
-            <div class="click-area">
-                <div class="click-circle" id="clickCircle">
-                    <div class="factory-icon">🏭</div>
-                </div>
-            </div>
-            <div class="click-info">
-                ⚙️ Доход за клик: <span id="clickIncome">1</span> $
-            </div>
-        </div>
-        <div class="upgrade-section" id="upgradeSection"></div>
-    </div>
-
-    <!-- Секция: Работать -->
-    <div id="workSection" class="section">
-        <div class="work-card">
-            <div class="section-title">🚖 Работа таксистом</div>
-            <div class="button-grid">
-                <div class="action-btn" data-cmd="/work_menu">🚖 Работать таксистом</div>
-                <div class="action-btn" data-cmd="/factory">🏭 Работать на заводе</div>
-                <div class="action-btn" data-cmd="/refuel_menu">⛽ Заправка</div>
-                <div class="action-btn" data-cmd="/sell_car_menu">🏷 Продать машину</div>
-                <div class="action-btn" data-cmd="/hire">👨‍✈️ Нанять водителя (ID)</div>
-                <div class="action-btn" data-cmd="/fire">🔥 Уволить водителя (ID)</div>
-            </div>
+<div class="container">
+    <div class="top-bar">
+        <div class="balance-box">💰 <span id="balance">0</span> $</div>
+        <div class="withdraw-buttons">
+            <button class="withdraw-btn" id="withdraw15Btn">⭐ 15</button>
+            <button class="withdraw-btn" id="withdraw25Btn">⭐ 25</button>
         </div>
     </div>
 
-    <!-- Секция: Гараж -->
-    <div id="garageSection" class="section">
-        <div class="garage-card">
-            <div class="section-title">🚗 Мой гараж</div>
-            <div id="garageList" class="car-list">
-                <div style="text-align:center; padding:20px;">Загрузка...</div>
-            </div>
-            <div class="button-grid" style="margin-top: 15px;">
-                <div class="action-btn" data-cmd="/garage">🔄 Обновить гараж</div>
-                <div class="action-btn" data-cmd="/buy_menu">🏎 Купить машину</div>
-            </div>
+    <!-- Кликер -->
+    <div class="clicker-card">
+        <div class="click-circle" id="clickCircle">
+            <div class="factory-icon">🏭</div>
+        </div>
+        <div class="click-info">
+            ⚙️ Доход за клик: <span id="clickIncome">1</span> $
+        </div>
+        <div class="upgrade-note">
+            💡 Для улучшения завода отправьте команду <strong>/upgrade</strong> в чат
         </div>
     </div>
 
-    <!-- Секция: Банк -->
-    <div id="bankSection" class="section">
-        <div class="bank-card">
-            <div class="section-title">🏦 Банковские операции</div>
-            <div class="button-grid">
-                <div class="action-btn" data-cmd="/loan_menu">💰 Взять кредит</div>
-                <div class="action-btn" data-cmd="/repay_menu">💳 Погасить кредит</div>
-                <div class="action-btn" data-cmd="/tip_race_menu">🏁 Гонка чаевых</div>
-                <div class="action-btn" data-cmd="/deposits_menu">💳 Мои вклады</div>
-                <div class="action-btn" data-cmd="/deposit 50000">📈 Пополнить вклад (50k)</div>
-            </div>
+    <!-- Кейсы -->
+    <div class="cases-section">
+        <div class="section-title">🎁 Кейс "Обычный"</div>
+        <div class="case-card">
+            <div class="case-price">💰 Стоимость: <span id="casePrice">100 000</span> $</div>
+            <button class="open-case-btn" id="openCaseBtn">🔓 Открыть кейс</button>
+            <div id="caseResult" class="result-area" style="display: none;"></div>
+            <button id="claimRewardBtn" class="claim-btn" style="display: none;">💰 Начислить выигрыш</button>
+            <button id="activateCodeBtn" class="claim-btn" style="display: none;">🎫 Активировать код</button>
         </div>
     </div>
-</div>
 
-<div class="bottom-nav">
-    <div class="nav-item" data-section="clicker">
-        <span class="nav-icon">🏭</span>
-        <span class="nav-label">Кликер</span>
+    <!-- Кейсы в разработке -->
+    <div class="cases-section disabled-case">
+        <div class="section-title">👑 Кейс "Бог" (в разработке)</div>
+        <div class="case-card">
+            <div class="case-price">💰 Скоро...</div>
+        </div>
     </div>
-    <div class="nav-item" data-section="work">
-        <span class="nav-icon">🚖</span>
-        <span class="nav-label">Работать</span>
+    <div class="cases-section disabled-case">
+        <div class="section-title">🚖 Кейс "Водитель" (в разработке)</div>
+        <div class="case-card">
+            <div class="case-price">💰 Скоро...</div>
+        </div>
     </div>
-    <div class="nav-item" data-section="garage">
-        <span class="nav-icon">🚗</span>
-        <span class="nav-label">Гараж</span>
-    </div>
-    <div class="nav-item" data-section="bank">
-        <span class="nav-icon">🏦</span>
-        <span class="nav-label">Банк</span>
+
+    <div class="instruction">
+        📌 <strong>Как играть:</strong><br>
+        • Кликайте по заводу, чтобы зарабатывать.<br>
+        • Улучшайте завод командой <strong>/upgrade</strong> в чате с ботом.<br>
+        • Открывайте кейс за 100 000$, получайте призы.<br>
+        • Если выпали деньги – нажмите "Начислить выигрыш".<br>
+        • Если выпал <strong>код</strong> – скопируйте его и введите в чат: <strong>/promo КОД</strong>.<br>
+        • При выпадении "Вывод 15 звёзд" администратор получит уведомление автоматически.
     </div>
 </div>
 
@@ -378,17 +313,70 @@
     let currentLevel = 0;
     let currentBalance = 0;
 
+    // Улучшения (цены уменьшены в 2 раза)
     const upgrades = [
-        { income: 2, price: 15000 },
-        { income: 4, price: 30000 },
-        { income: 6, price: 60000 },
-        { income: 10, price: 100000 },
-        { income: 15, price: 300000 },
-        { income: 20, price: 500000 },
-        { income: 50, price: 1000000 },
-        { income: 100, price: 2000000 }
+        { income: 2, price: 7500 },
+        { income: 4, price: 15000 },
+        { income: 6, price: 30000 },
+        { income: 10, price: 50000 },
+        { income: 15, price: 150000 },
+        { income: 20, price: 250000 },
+        { income: 50, price: 500000 },
+        { income: 100, price: 1000000 }
     ];
 
+    // Данные кейса
+    const CASE_COST = 100000;
+    // Веса наград (сумма 243)
+    const rewards = [
+        { type: 'money', amount: 5000, weight: 30 },
+        { type: 'money', amount: 10000, weight: 28 },
+        { type: 'car', name: 'Kia Cerato', weight: 25, codeCount: 20 },
+        { type: 'money', amount: 50000, weight: 24 },
+        { type: 'money', amount: 100000, weight: 23 },
+        { type: 'money', amount: 500000, weight: 20 },
+        { type: 'money', amount: 1000000, weight: 18 },
+        { type: 'money', amount: 5000000, weight: 12 },
+        { type: 'money', amount: 10000000, weight: 6 },
+        { type: 'money', amount: 20000000, weight: 2 },
+        { type: 'stars', stars: 15, weight: 55, codeCount: 50 },
+        { type: 'nothing', weight: 55 }
+    ];
+
+    // Хранилище сгенерированных кодов (для уникальности в сессии)
+    let generatedCarCodes = [];
+    let generatedStarCodes = [];
+
+    function generateUniqueCode(existingArray, length = 8) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code;
+        do {
+            code = '';
+            for (let i = 0; i < length; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+        } while (existingArray.includes(code));
+        existingArray.push(code);
+        return code;
+    }
+
+    // Получить случайную награду по весам
+    function getRandomReward() {
+        let totalWeight = 0;
+        for (let r of rewards) totalWeight += r.weight;
+        let rand = Math.random() * totalWeight;
+        let accum = 0;
+        for (let r of rewards) {
+            accum += r.weight;
+            if (rand < accum) return r;
+        }
+        return rewards[0];
+    }
+
+    let currentReward = null;      // последний выигрыш
+    let currentCode = null;        // если выпал код
+
+    // Отправка команды боту
     function sendCommand(cmd) {
         try {
             tg.sendData(cmd);
@@ -397,6 +385,7 @@
         }
     }
 
+    // Анимация всплывающей суммы
     function showFloatingNumber(amount, x, y) {
         const div = document.createElement('div');
         div.className = 'floating-number';
@@ -419,59 +408,12 @@
         saveLocalData();
     }
 
-    // Улучшение
-    function upgradeFactory(income, price, index) {
-        if (currentBalance < price) {
-            tg.showAlert(`❌ Недостаточно средств! Нужно ${price.toLocaleString()}$`);
-            return;
-        }
-        sendCommand('/upgrade');
-        currentIncome = income;
-        currentLevel = index + 1;
-        currentBalance -= price;
-        updateBalanceDisplay();
-        renderUpgrades();
-        saveLocalData();
-        tg.showAlert(`✅ Уровень ${currentLevel} достигнут! Доход за клик: ${currentIncome}$`);
-    }
-
-    function renderUpgrades() {
-        const container = document.getElementById('upgradeSection');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="section-title">📈 Модернизация завода</div>
-            <div class="upgrade-grid" id="upgradesContainer"></div>
-            <div class="current-level" id="currentLevelInfo"></div>
-        `;
-        const grid = document.getElementById('upgradesContainer');
-        grid.className = 'upgrade-grid';
-        for (let i = 0; i < upgrades.length; i++) {
-            const up = upgrades[i];
-            const isPurchased = currentLevel > i;
-            const isAvailable = currentLevel === i;
-            const card = document.createElement('div');
-            card.className = 'upgrade-card' + (isPurchased ? ' disabled-upgrade' : '');
-            if (isAvailable) {
-                card.onclick = () => upgradeFactory(up.income, up.price, i);
-            }
-            card.innerHTML = `
-                <div class="upgrade-name">⚙️ Уровень ${i+1}</div>
-                <div class="upgrade-price">💰 ${up.price.toLocaleString()} $</div>
-                <div class="upgrade-reward">💵 +${up.income}$ за клик</div>
-            `;
-            grid.appendChild(card);
-        }
-        document.getElementById('clickIncome').innerText = currentIncome;
-        document.getElementById('currentLevelInfo').innerHTML = `
-            🏭 Уровень завода: ${currentLevel} / ${upgrades.length} &nbsp;|&nbsp; 
-            💰 Доход: ${currentIncome}$ за клик
-        `;
-    }
-
+    // Обновление отображения баланса
     function updateBalanceDisplay() {
         document.getElementById('balance').innerText = currentBalance.toLocaleString();
     }
 
+    // Загрузка/сохранение локальных данных
     function saveLocalData() {
         localStorage.setItem('factory_level', currentLevel);
         localStorage.setItem('balance', currentBalance);
@@ -485,7 +427,7 @@
                 currentLevel = parseInt(savedLevel);
                 const incomes = [1,2,4,6,10,15,20,50,100];
                 currentIncome = incomes[currentLevel] || 1;
-                renderUpgrades();
+                document.getElementById('clickIncome').innerText = currentIncome;
             }
             if (savedBalance !== null) {
                 currentBalance = parseInt(savedBalance);
@@ -494,51 +436,98 @@
         } catch(e) {}
     }
 
-    // Имитация получения гаража (здесь бот должен присылать данные, но для демонстрации пока заглушка)
-    function updateGarage() {
-        const garageDiv = document.getElementById('garageList');
-        garageDiv.innerHTML = `<div style="text-align:center; padding:20px;">🚗 У вас пока нет машин. Купите в разделе "Работать" -> "Купить машину".</div>`;
-        // В реальном приложении нужно запросить /garage и распарсить ответ (сложно без вебхука). 
-        // Пока просто кнопка обновления отправляет команду.
-    }
+    // Открытие кейса
+    function openCase() {
+        if (currentBalance < CASE_COST) {
+            tg.showAlert(`❌ Недостаточно средств! Нужно ${CASE_COST.toLocaleString()}$`);
+            return;
+        }
+        // Списываем стоимость
+        currentBalance -= CASE_COST;
+        updateBalanceDisplay();
+        saveLocalData();
+        sendCommand(`/spend ${CASE_COST}`); // опционально уведомить бота
 
-    // Переключение вкладок
-    function switchSection(sectionName) {
-        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-        document.getElementById(`${sectionName}Section`).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-        document.querySelector(`.nav-item[data-section="${sectionName}"]`).classList.add('active');
+        const reward = getRandomReward();
+        currentReward = reward;
+        const resultDiv = document.getElementById('caseResult');
+        const claimBtn = document.getElementById('claimRewardBtn');
+        const activateBtn = document.getElementById('activateCodeBtn');
         
-        if (sectionName === 'garage') {
-            sendCommand('/garage');
-            updateGarage();
+        if (reward.type === 'nothing') {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '😞 Вам ничего не выпало. Попробуйте ещё!';
+            claimBtn.style.display = 'none';
+            activateBtn.style.display = 'none';
+            currentCode = null;
+        } 
+        else if (reward.type === 'money') {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `🎉 Поздравляем! Вы выиграли ${reward.amount.toLocaleString()}$ !`;
+            claimBtn.style.display = 'block';
+            activateBtn.style.display = 'none';
+            currentCode = null;
+        }
+        else if (reward.type === 'car') {
+            // генерируем уникальный код
+            currentCode = generateUniqueCode(generatedCarCodes, 8);
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `🚗 Вы выиграли машину ${reward.name}!<br>Ваш код активации: <b>${currentCode}</b><br>Используйте команду /promo ${currentCode} в чате с ботом.`;
+            claimBtn.style.display = 'none';
+            activateBtn.style.display = 'block';
+        }
+        else if (reward.type === 'stars') {
+            currentCode = generateUniqueCode(generatedStarCodes, 8);
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `⭐ Вы выиграли вывод 15 звёзд!<br>Ваш код: <b>${currentCode}</b><br>Активируйте его командой /promo ${currentCode} в чате.`;
+            claimBtn.style.display = 'none';
+            activateBtn.style.display = 'block';
+            // Уведомление админу
+            sendCommand(`/notify_admin Выигрыш 15 звёзд! Код: ${currentCode}, пользователь: ${tg.initDataUnsafe.user?.id || 'unknown'}`);
         }
     }
 
-    // Обработчики кнопок действий
-    document.querySelectorAll('.action-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const cmd = btn.getAttribute('data-cmd');
-            if (cmd) sendCommand(cmd);
-        });
-    });
+    // Начисление денежного выигрыша
+    function claimMoney() {
+        if (!currentReward || currentReward.type !== 'money') return;
+        const amount = currentReward.amount;
+        currentBalance += amount;
+        updateBalanceDisplay();
+        saveLocalData();
+        sendCommand(`/add_money ${amount}`);
+        document.getElementById('caseResult').innerHTML = `✅ ${amount.toLocaleString()}$ зачислено на ваш баланс!`;
+        document.getElementById('claimRewardBtn').style.display = 'none';
+        currentReward = null;
+    }
 
-    // Навигация
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const section = item.getAttribute('data-section');
-            switchSection(section);
-        });
-    });
+    // Активация кода (отправка команды боту)
+    function activateCode() {
+        if (!currentCode) return;
+        sendCommand(`/promo ${currentCode}`);
+        tg.showAlert(`Код ${currentCode} отправлен боту. Если он действителен, награда будет зачислена.`);
+        document.getElementById('activateCodeBtn').style.display = 'none';
+        document.getElementById('caseResult').innerHTML += `<br>✅ Код отправлен на активацию.`;
+        currentCode = null;
+        currentReward = null;
+    }
 
-    // Кликер
+    // Обновление информации о доходе (можно вызывать после улучшения)
+    function refreshIncome() {
+        // При загрузке или после команды /upgrade можно запросить уровень
+        sendCommand('/get_factory_level');
+        // Для локальной синхронизации можно также читать из localStorage, но лучше верить боту
+    }
+
+    // Обработчики
     document.getElementById('clickCircle').addEventListener('click', tap);
     document.getElementById('withdraw15Btn').addEventListener('click', () => sendCommand('/withdraw 15'));
     document.getElementById('withdraw25Btn').addEventListener('click', () => sendCommand('/withdraw 25'));
+    document.getElementById('openCaseBtn').addEventListener('click', openCase);
+    document.getElementById('claimRewardBtn').addEventListener('click', claimMoney);
+    document.getElementById('activateCodeBtn').addEventListener('click', activateCode);
 
-    // Инициализация
+    // Загрузка начальных данных
     loadLocalData();
-    renderUpgrades();
     sendCommand('/balance');
     sendCommand('/get_factory_level');
     setInterval(() => {
@@ -546,8 +535,8 @@
         sendCommand('/get_factory_level');
     }, 30000);
 
-    // Активируем вкладку кликера по умолчанию
-    switchSection('clicker');
+    // Для отображения текущего дохода (из localStorage)
+    document.getElementById('clickIncome').innerText = currentIncome;
 </script>
 </body>
 </html>
