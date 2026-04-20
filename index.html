@@ -1,117 +1,326 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Таксист - Машины</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Таксист – Завод-Кликер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e;
-            color: #e0e0e0;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #1e1a0c;
+            color: #f5e6c4;
             padding: 20px;
+            min-height: 100vh;
         }
-        .car-card {
-            background: #16213e;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            border-left: 4px solid #e94560;
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
         }
-        .car-name {
-            font-size: 20px;
-            font-weight: bold;
-            color: #e94560;
-            margin-bottom: 10px;
-        }
-        .car-stats {
+        .top-bar {
             display: flex;
             justify-content: space-between;
-            font-size: 14px;
-            color: #aaa;
-            margin-bottom: 15px;
+            align-items: center;
+            background: #2a2418;
+            border-radius: 60px;
+            padding: 10px 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .buy-button {
-            background: #e94560;
-            border: none;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 16px;
+        .balance-box {
+            background: #3d3522;
+            border-radius: 40px;
+            padding: 8px 18px;
             font-weight: bold;
-            width: 100%;
+            font-size: 1.3rem;
+            color: #ffd966;
+        }
+        .withdraw-btn {
+            background: #e6b422;
+            border: none;
+            color: #1e1a0c;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 8px 16px;
+            border-radius: 40px;
             cursor: pointer;
             transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .buy-button:hover {
-            background: #d13b54;
+        .withdraw-btn:active {
+            transform: scale(0.96);
+            background: #c99f1a;
         }
-        .balance {
-            font-size: 24px;
-            font-weight: bold;
-            color: #e94560;
+        .withdraw-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .clicker-card {
+            background: #2a2418;
+            border-radius: 48px;
+            padding: 30px 20px;
             text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .click-area {
+            display: flex;
+            justify-content: center;
             margin-bottom: 20px;
+        }
+        .click-circle {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at 30% 30%, #f3bc5c, #c47d2e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.05s linear;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+            border: 3px solid #ffd966;
+        }
+        .click-circle:active {
+            transform: scale(0.96);
+        }
+        .factory-icon {
+            font-size: 90px;
+            filter: drop-shadow(2px 4px 6px black);
+        }
+        .click-info {
+            font-size: 1.2rem;
+            background: #3d3522;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 40px;
+            margin-top: 10px;
+        }
+        .click-info span {
+            font-weight: bold;
+            color: #ffd966;
+            font-size: 1.5rem;
+        }
+        .floating-number {
+            position: fixed;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #ffd966;
+            text-shadow: 0 0 5px black;
+            z-index: 1000;
+            animation: floatUp 0.6s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0px) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
+        }
+        .upgrade-section {
+            background: #2a2418;
+            border-radius: 36px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd966;
+            border-left: 5px solid #ffd966;
+            padding-left: 12px;
+        }
+        .upgrade-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        .upgrade-card {
+            background: #3d3522;
+            border-radius: 28px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.1s;
+            border: 1px solid #5e4f32;
+        }
+        .upgrade-card:active {
+            transform: scale(0.97);
+            background: #4f422a;
+        }
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        .upgrade-price {
+            font-size: 0.85rem;
+            color: #ffd966;
+            margin-top: 6px;
+        }
+        .upgrade-reward {
+            font-size: 0.8rem;
+            background: #2a2418;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 6px;
+        }
+        .disabled-upgrade {
+            opacity: 0.6;
+            filter: grayscale(0.2);
+            cursor: not-allowed;
+        }
+        .disabled-upgrade:active {
+            transform: none;
+        }
+        .current-level {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            background: #3d3522;
+            border-radius: 40px;
+            padding: 8px;
+        }
+        .sync-btn {
+            background: #2a2418;
+            border: 1px solid #ffd966;
+            color: #ffd966;
+            padding: 8px 16px;
+            border-radius: 40px;
+            margin-top: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="balance">💰 Баланс: <span id="balance">12 500 $</span></div>
-    
-    <div class="car-card" id="car-1">
-        <div class="car-name">🚗 Жигули (ID: 1)</div>
-        <div class="car-stats">
-            <span>💰 доход: 10-30$</span>
-            <span>⛽ бак: 40л</span>
-            <span>📊 расход: 2л</span>
+<div class="container">
+    <div class="top-bar">
+        <div class="balance-box">💰 <span id="balance">0</span> $</div>
+        <div class="withdraw-buttons">
+            <button class="withdraw-btn" id="withdraw15Btn">⭐ 15</button>
+            <button class="withdraw-btn" id="withdraw25Btn">⭐ 25</button>
         </div>
-        <div class="car-stats">
-            <span>💵 цена: 5 000$</span>
-            <span>🔧 топливо: 40/40 л</span>
-        </div>
-        <button class="buy-button" onclick="buyCar(1)">🏎 Купить Жигули</button>
     </div>
 
-    <div class="car-card" id="car-2">
-        <div class="car-name">🚙 Лада Веста (ID: 2)</div>
-        <div class="car-stats">
-            <span>💰 доход: 40-80$</span>
-            <span>⛽ бак: 50л</span>
-            <span>📊 расход: 2л</span>
+    <div class="clicker-card">
+        <div class="click-area">
+            <div class="click-circle" id="clickCircle">
+                <div class="factory-icon">🏭</div>
+            </div>
         </div>
-        <div class="car-stats">
-            <span>💵 цена: 20 000$</span>
-            <span>🔧 топливо: 50/50 л</span>
+        <div class="click-info">
+            Доход за клик: <span id="clickIncome">1</span> $
         </div>
-        <button class="buy-button" onclick="buyCar(2)">🏎 Купить Ладу Веста</button>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // разворачиваем на весь экран
+    <div class="upgrade-section">
+        <div class="section-title">📈 Улучшить завод</div>
+        <div class="upgrade-grid" id="upgradesContainer"></div>
+        <div class="current-level" id="currentLevelInfo"></div>
+        <button class="sync-btn" id="syncBtn">🔄 Синхронизировать баланс и уровень</button>
+    </div>
+</div>
 
-        // Функция покупки (отправляет данные боту)
-        function buyCar(carId) {
-            tg.HapticFeedback.impactOccurred('medium'); // вибрация
-            
-            // Отправляем данные в чат с ботом
-            tg.sendData(JSON.stringify({
-                action: 'buy_car',
-                car_id: carId
-            }));
-            
-            // Показываем уведомление
-            tg.showAlert(`Покупка машины ID ${carId} отправлена!`);
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.enableClosingConfirmation();
+
+    let currentIncome = 1;
+    let currentLevel = 0;
+
+    const upgrades = [
+        { income: 2, price: 15000 },
+        { income: 4, price: 30000 },
+        { income: 6, price: 60000 },
+        { income: 10, price: 100000 },
+        { income: 15, price: 300000 },
+        { income: 20, price: 500000 },
+        { income: 50, price: 1000000 },
+        { income: 100, price: 2000000 }
+    ];
+
+    function sendCommand(cmd) {
+        try {
+            tg.sendData(cmd);
+        } catch(e) {
+            console.warn("sendData error", e);
         }
+    }
 
-        // Получаем данные из Telegram (initData)
-        const initData = tg.initData;
-        console.log('Init Data:', initData);
-        
-        // Здесь потом будет запрос к API для получения реального баланса
-    </script>
+    function showFloatingNumber(amount, x, y) {
+        const div = document.createElement('div');
+        div.className = 'floating-number';
+        div.innerText = `+${amount}$`;
+        div.style.left = `${x}px`;
+        div.style.top = `${y}px`;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 600);
+    }
+
+    function tap(event) {
+        const rect = event.target.closest('.click-circle').getBoundingClientRect();
+        const x = rect.left + rect.width / 2 - 30;
+        const y = rect.top - 20;
+        showFloatingNumber(currentIncome, x, y);
+        sendCommand('/tap');
+        const balanceSpan = document.getElementById('balance');
+        let currentBalance = parseInt(balanceSpan.innerText.replace(/[^0-9]/g, '')) || 0;
+        balanceSpan.innerText = (currentBalance + currentIncome).toLocaleString();
+    }
+
+    function upgrade(income, price, index) {
+        sendCommand('/upgrade');
+        setTimeout(() => sync(), 1000);
+    }
+
+    function renderUpgrades() {
+        const container = document.getElementById('upgradesContainer');
+        container.innerHTML = '';
+        for (let i = 0; i < upgrades.length; i++) {
+            const up = upgrades[i];
+            const isPurchased = currentLevel > i;
+            const card = document.createElement('div');
+            card.className = 'upgrade-card' + (isPurchased ? ' disabled-upgrade' : '');
+            if (!isPurchased) {
+                card.onclick = () => upgrade(up.income, up.price, i);
+            }
+            card.innerHTML = `
+                <div class="upgrade-name">Уровень ${i+1}</div>
+                <div class="upgrade-price">💰 ${up.price.toLocaleString()} $</div>
+                <div class="upgrade-reward">💵 +${up.income}$ за клик</div>
+            `;
+            container.appendChild(card);
+        }
+        document.getElementById('clickIncome').innerText = currentIncome;
+        document.getElementById('currentLevelInfo').innerHTML = `Текущий уровень: ${currentLevel} (доход за клик: ${currentIncome}$)`;
+    }
+
+    function sync() {
+        sendCommand('/balance');
+        sendCommand('/get_factory_level');
+        tg.showAlert('Запрос отправлен. Баланс и уровень появятся в чате.');
+    }
+
+    window.onload = () => {
+        sendCommand('/balance');
+        sendCommand('/get_factory_level');
+        document.getElementById('balance').innerText = '?';
+    };
+
+    document.getElementById('clickCircle').addEventListener('click', tap);
+    document.getElementById('withdraw15Btn').addEventListener('click', () => sendCommand('/withdraw 15'));
+    document.getElementById('withdraw25Btn').addEventListener('click', () => sendCommand('/withdraw 25'));
+    document.getElementById('syncBtn').addEventListener('click', sync);
+
+    renderUpgrades();
+</script>
 </body>
 </html>
