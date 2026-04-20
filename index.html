@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Таксист – Завод-Кликер</title>
+    <title>Таксист – Центр управления</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -17,27 +17,22 @@
             font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
             background: linear-gradient(145deg, #1a1a0e 0%, #2a2418 100%);
             color: #f5e6c4;
-            padding: 20px;
             min-height: 100vh;
+            padding-bottom: 80px;
         }
 
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        /* Верхняя панель с балансом и выводом */
+        /* Верхняя панель */
         .top-bar {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            border-radius: 80px;
-            padding: 8px 16px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 217, 102, 0.3);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255, 217, 102, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .balance-box {
@@ -50,12 +45,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            letter-spacing: 1px;
         }
 
-        .balance-box::before {
-            content: "💰";
-            font-size: 1.2rem;
+        .withdraw-buttons {
+            display: flex;
+            gap: 10px;
         }
 
         .withdraw-btn {
@@ -69,9 +63,6 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
         .withdraw-btn:active {
@@ -79,12 +70,29 @@
             background: #c99f1a;
         }
 
-        .withdraw-buttons {
-            display: flex;
-            gap: 10px;
+        /* Контент */
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        /* Карточка кликера */
+        /* Секции (вкладки) */
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Кликер-карточка (центральная) */
         .clicker-card {
             background: rgba(42, 36, 24, 0.8);
             backdrop-filter: blur(8px);
@@ -123,11 +131,6 @@
         .factory-icon {
             font-size: 100px;
             filter: drop-shadow(4px 8px 12px black);
-            transition: 0.05s;
-        }
-
-        .click-circle:active .factory-icon {
-            transform: scale(0.95);
         }
 
         .click-info {
@@ -148,35 +151,13 @@
             font-size: 1.6rem;
         }
 
-        /* Анимация всплывающей суммы */
-        .floating-number {
-            position: fixed;
-            pointer-events: none;
-            font-weight: bold;
-            font-size: 2rem;
-            color: #ffd966;
-            text-shadow: 0 0 8px #b87c1a;
-            z-index: 1000;
-            animation: floatUp 0.6s ease-out forwards;
-        }
-
-        @keyframes floatUp {
-            0% {
-                opacity: 1;
-                transform: translateY(0px) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-100px) scale(1.3);
-            }
-        }
-
-        /* Секция улучшений */
-        .upgrade-section {
+        /* Секция работы (такси) */
+        .work-card, .garage-card, .bank-card {
             background: rgba(42, 36, 24, 0.8);
             backdrop-filter: blur(8px);
             border-radius: 48px;
             padding: 20px;
+            margin-bottom: 20px;
             border: 1px solid rgba(255, 217, 102, 0.4);
         }
 
@@ -192,130 +173,198 @@
             padding-left: 15px;
         }
 
-        .upgrade-grid {
+        .button-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
+            margin-top: 10px;
         }
 
-        .upgrade-card {
+        .action-btn {
             background: #3d3522;
-            border-radius: 32px;
+            border: 1px solid #5e4f32;
+            border-radius: 40px;
             padding: 12px;
             text-align: center;
             cursor: pointer;
             transition: 0.1s;
-            border: 1px solid #5e4f32;
-            position: relative;
-            overflow: hidden;
+            font-weight: bold;
+            color: #ffd966;
         }
 
-        .upgrade-card::after {
-            content: "🔧";
-            position: absolute;
-            bottom: -10px;
-            right: -10px;
-            font-size: 30px;
-            opacity: 0.2;
-            pointer-events: none;
-        }
-
-        .upgrade-card:active {
-            transform: scale(0.96);
+        .action-btn:active {
+            transform: scale(0.97);
             background: #4f422a;
         }
 
-        .upgrade-name {
-            font-weight: bold;
-            font-size: 1rem;
-            margin-bottom: 6px;
+        /* Список машин в гараже */
+        .car-list {
+            margin-top: 10px;
         }
 
-        .upgrade-price {
+        .car-item {
+            background: #2a2418;
+            border-radius: 28px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #5e4f32;
+        }
+
+        .car-name {
+            font-weight: bold;
+        }
+
+        .car-fuel {
             font-size: 0.8rem;
             color: #ffd966;
-            margin-top: 6px;
         }
 
-        .upgrade-reward {
-            font-size: 0.75rem;
-            background: #2a2418;
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-top: 6px;
+        /* Анимация всплывающей суммы */
+        .floating-number {
+            position: fixed;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: 2rem;
+            color: #ffd966;
+            text-shadow: 0 0 8px #b87c1a;
+            z-index: 1000;
+            animation: floatUp 0.6s ease-out forwards;
         }
 
-        .disabled-upgrade {
-            opacity: 0.5;
-            filter: grayscale(0.3);
-            cursor: not-allowed;
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0px) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(1.3); }
         }
 
-        .disabled-upgrade:active {
-            transform: none;
-        }
-
-        .current-level {
-            text-align: center;
-            margin-top: 15px;
-            font-size: 0.85rem;
-            background: #2a2418;
-            border-radius: 40px;
-            padding: 8px;
+        /* Нижняя навигация */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 10px 20px 20px;
+            border-top: 1px solid rgba(255, 217, 102, 0.3);
+            z-index: 20;
         }
 
-        /* Индикатор прогресса уровня */
-        .level-progress {
-            width: 100%;
-            height: 6px;
-            background: #4f422a;
-            border-radius: 3px;
-            margin-top: 8px;
-            overflow: hidden;
+        .nav-item {
+            text-align: center;
+            cursor: pointer;
+            padding: 8px 0;
+            flex: 1;
+            border-radius: 40px;
+            transition: 0.2s;
+            color: #aaa;
         }
 
-        .level-progress-fill {
-            width: 0%;
-            height: 100%;
-            background: #ffd966;
-            border-radius: 3px;
-            transition: width 0.3s;
+        .nav-item.active {
+            background: #3d3522;
+            color: #ffd966;
+        }
+
+        .nav-icon {
+            font-size: 1.8rem;
+            display: block;
+        }
+
+        .nav-label {
+            font-size: 0.7rem;
+            margin-top: 4px;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="top-bar">
-        <div class="balance-box"><span id="balance">0</span> $</div>
-        <div class="withdraw-buttons">
-            <button class="withdraw-btn" id="withdraw15Btn">⭐ 15</button>
-            <button class="withdraw-btn" id="withdraw25Btn">⭐ 25</button>
-        </div>
+<div class="top-bar">
+    <div class="balance-box">💰 <span id="balance">0</span> $</div>
+    <div class="withdraw-buttons">
+        <button class="withdraw-btn" id="withdraw15Btn">⭐ 15</button>
+        <button class="withdraw-btn" id="withdraw25Btn">⭐ 25</button>
     </div>
+</div>
 
-    <div class="clicker-card">
-        <div class="click-area">
-            <div class="click-circle" id="clickCircle">
-                <div class="factory-icon">🏭</div>
+<div class="content">
+    <!-- Секция: Кликер (по умолчанию активна) -->
+    <div id="clickerSection" class="section active">
+        <div class="clicker-card">
+            <div class="click-area">
+                <div class="click-circle" id="clickCircle">
+                    <div class="factory-icon">🏭</div>
+                </div>
+            </div>
+            <div class="click-info">
+                ⚙️ Доход за клик: <span id="clickIncome">1</span> $
             </div>
         </div>
-        <div class="click-info">
-            ⚙️ Доход за клик: <span id="clickIncome">1</span> $
+        <div class="upgrade-section" id="upgradeSection"></div>
+    </div>
+
+    <!-- Секция: Работать -->
+    <div id="workSection" class="section">
+        <div class="work-card">
+            <div class="section-title">🚖 Работа таксистом</div>
+            <div class="button-grid">
+                <div class="action-btn" data-cmd="/work_menu">🚖 Работать таксистом</div>
+                <div class="action-btn" data-cmd="/factory">🏭 Работать на заводе</div>
+                <div class="action-btn" data-cmd="/refuel_menu">⛽ Заправка</div>
+                <div class="action-btn" data-cmd="/sell_car_menu">🏷 Продать машину</div>
+                <div class="action-btn" data-cmd="/hire">👨‍✈️ Нанять водителя (ID)</div>
+                <div class="action-btn" data-cmd="/fire">🔥 Уволить водителя (ID)</div>
+            </div>
         </div>
     </div>
 
-    <div class="upgrade-section">
-        <div class="section-title">
-            📈 Модернизация завода
+    <!-- Секция: Гараж -->
+    <div id="garageSection" class="section">
+        <div class="garage-card">
+            <div class="section-title">🚗 Мой гараж</div>
+            <div id="garageList" class="car-list">
+                <div style="text-align:center; padding:20px;">Загрузка...</div>
+            </div>
+            <div class="button-grid" style="margin-top: 15px;">
+                <div class="action-btn" data-cmd="/garage">🔄 Обновить гараж</div>
+                <div class="action-btn" data-cmd="/buy_menu">🏎 Купить машину</div>
+            </div>
         </div>
-        <div class="upgrade-grid" id="upgradesContainer"></div>
-        <div class="current-level" id="currentLevelInfo"></div>
+    </div>
+
+    <!-- Секция: Банк -->
+    <div id="bankSection" class="section">
+        <div class="bank-card">
+            <div class="section-title">🏦 Банковские операции</div>
+            <div class="button-grid">
+                <div class="action-btn" data-cmd="/loan_menu">💰 Взять кредит</div>
+                <div class="action-btn" data-cmd="/repay_menu">💳 Погасить кредит</div>
+                <div class="action-btn" data-cmd="/tip_race_menu">🏁 Гонка чаевых</div>
+                <div class="action-btn" data-cmd="/deposits_menu">💳 Мои вклады</div>
+                <div class="action-btn" data-cmd="/deposit 50000">📈 Пополнить вклад (50k)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <div class="nav-item" data-section="clicker">
+        <span class="nav-icon">🏭</span>
+        <span class="nav-label">Кликер</span>
+    </div>
+    <div class="nav-item" data-section="work">
+        <span class="nav-icon">🚖</span>
+        <span class="nav-label">Работать</span>
+    </div>
+    <div class="nav-item" data-section="garage">
+        <span class="nav-icon">🚗</span>
+        <span class="nav-label">Гараж</span>
+    </div>
+    <div class="nav-item" data-section="bank">
+        <span class="nav-icon">🏦</span>
+        <span class="nav-label">Банк</span>
     </div>
 </div>
 
@@ -324,7 +373,11 @@
     tg.expand();
     tg.enableClosingConfirmation();
 
-    // Данные улучшений (доход за клик и цена)
+    // Данные кликера
+    let currentIncome = 1;
+    let currentLevel = 0;
+    let currentBalance = 0;
+
     const upgrades = [
         { income: 2, price: 15000 },
         { income: 4, price: 30000 },
@@ -336,11 +389,6 @@
         { income: 100, price: 2000000 }
     ];
 
-    let currentIncome = 1;
-    let currentLevel = 0;
-    let currentBalance = 0;
-
-    // Функция отправки команды боту
     function sendCommand(cmd) {
         try {
             tg.sendData(cmd);
@@ -349,7 +397,6 @@
         }
     }
 
-    // Анимация всплывающей суммы
     function showFloatingNumber(amount, x, y) {
         const div = document.createElement('div');
         div.className = 'floating-number';
@@ -360,25 +407,19 @@
         setTimeout(() => div.remove(), 600);
     }
 
-    // Обработчик клика по заводу
+    // Клик по заводу
     function tap(event) {
         const rect = event.target.closest('.click-circle').getBoundingClientRect();
         const x = rect.left + rect.width / 2 - 30;
         const y = rect.top - 20;
         showFloatingNumber(currentIncome, x, y);
-        
         sendCommand('/tap');
-        // Оптимистичное обновление баланса
         currentBalance += currentIncome;
         updateBalanceDisplay();
         saveLocalData();
     }
 
-    function updateBalanceDisplay() {
-        document.getElementById('balance').innerText = currentBalance.toLocaleString();
-    }
-
-    // Улучшение завода
+    // Улучшение
     function upgradeFactory(income, price, index) {
         if (currentBalance < price) {
             tg.showAlert(`❌ Недостаточно средств! Нужно ${price.toLocaleString()}$`);
@@ -394,10 +435,16 @@
         tg.showAlert(`✅ Уровень ${currentLevel} достигнут! Доход за клик: ${currentIncome}$`);
     }
 
-    // Отрисовка списка улучшений
     function renderUpgrades() {
-        const container = document.getElementById('upgradesContainer');
-        container.innerHTML = '';
+        const container = document.getElementById('upgradeSection');
+        if (!container) return;
+        container.innerHTML = `
+            <div class="section-title">📈 Модернизация завода</div>
+            <div class="upgrade-grid" id="upgradesContainer"></div>
+            <div class="current-level" id="currentLevelInfo"></div>
+        `;
+        const grid = document.getElementById('upgradesContainer');
+        grid.className = 'upgrade-grid';
         for (let i = 0; i < upgrades.length; i++) {
             const up = upgrades[i];
             const isPurchased = currentLevel > i;
@@ -412,7 +459,7 @@
                 <div class="upgrade-price">💰 ${up.price.toLocaleString()} $</div>
                 <div class="upgrade-reward">💵 +${up.income}$ за клик</div>
             `;
-            container.appendChild(card);
+            grid.appendChild(card);
         }
         document.getElementById('clickIncome').innerText = currentIncome;
         document.getElementById('currentLevelInfo').innerHTML = `
@@ -421,13 +468,15 @@
         `;
     }
 
-    // Сохранение локально
+    function updateBalanceDisplay() {
+        document.getElementById('balance').innerText = currentBalance.toLocaleString();
+    }
+
     function saveLocalData() {
         localStorage.setItem('factory_level', currentLevel);
         localStorage.setItem('balance', currentBalance);
     }
 
-    // Загрузка локальных данных при старте
     function loadLocalData() {
         try {
             const savedLevel = localStorage.getItem('factory_level');
@@ -445,28 +494,60 @@
         } catch(e) {}
     }
 
-    // Инициализация: запрос актуальных данных у бота и загрузка локальных
-    function init() {
-        loadLocalData();
-        sendCommand('/balance');
-        sendCommand('/get_factory_level');
-        setTimeout(() => {
-            tg.showAlert('💰 Баланс и уровень завода можно проверить в чате бота. Начинайте кликать!');
-        }, 500);
-        // Автосинхронизация каждые 30 секунд
-        setInterval(() => {
-            sendCommand('/balance');
-            sendCommand('/get_factory_level');
-        }, 30000);
+    // Имитация получения гаража (здесь бот должен присылать данные, но для демонстрации пока заглушка)
+    function updateGarage() {
+        const garageDiv = document.getElementById('garageList');
+        garageDiv.innerHTML = `<div style="text-align:center; padding:20px;">🚗 У вас пока нет машин. Купите в разделе "Работать" -> "Купить машину".</div>`;
+        // В реальном приложении нужно запросить /garage и распарсить ответ (сложно без вебхука). 
+        // Пока просто кнопка обновления отправляет команду.
     }
 
-    // Обработчики кнопок
+    // Переключение вкладок
+    function switchSection(sectionName) {
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(`${sectionName}Section`).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        document.querySelector(`.nav-item[data-section="${sectionName}"]`).classList.add('active');
+        
+        if (sectionName === 'garage') {
+            sendCommand('/garage');
+            updateGarage();
+        }
+    }
+
+    // Обработчики кнопок действий
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const cmd = btn.getAttribute('data-cmd');
+            if (cmd) sendCommand(cmd);
+        });
+    });
+
+    // Навигация
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const section = item.getAttribute('data-section');
+            switchSection(section);
+        });
+    });
+
+    // Кликер
     document.getElementById('clickCircle').addEventListener('click', tap);
     document.getElementById('withdraw15Btn').addEventListener('click', () => sendCommand('/withdraw 15'));
     document.getElementById('withdraw25Btn').addEventListener('click', () => sendCommand('/withdraw 25'));
 
-    init();
+    // Инициализация
+    loadLocalData();
     renderUpgrades();
+    sendCommand('/balance');
+    sendCommand('/get_factory_level');
+    setInterval(() => {
+        sendCommand('/balance');
+        sendCommand('/get_factory_level');
+    }, 30000);
+
+    // Активируем вкладку кликера по умолчанию
+    switchSection('clicker');
 </script>
 </body>
 </html>
