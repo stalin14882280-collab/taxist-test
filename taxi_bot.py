@@ -552,13 +552,14 @@ def get_withdraw_requests(user_id=None, limit=20):
 @dp.message(Command("withdraw"))
 @subscription_required
 async def cmd_withdraw_stars(message: types.Message, **kwargs):
+    """Создание заявки на вывод Telegram Stars"""
     user_id = message.from_user.id
     args = message.text.split(maxsplit=2)
     if len(args) < 2:
         await message.reply(
             "❌ Использование: /withdraw <количество звёзд> [комментарий]\n"
             f"Минимум: {MIN_STARS} ⭐, максимум: {MAX_STARS} ⭐.\n"
-            f"Курс: 10 000 000 $ = 1 ⭐.\n"
+            f"Курс: 10 000 000 $ = 1 ⭐.\n"
             f"Пример: /withdraw 15"
         )
         return
