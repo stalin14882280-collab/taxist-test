@@ -654,6 +654,165 @@ async def withdraw_info(callback: types.CallbackQuery, **kwargs):
 @subscription_required
 async def withdraw_15(callback: types.CallbackQuery, **kwargs):
     await callback.answer()
+    user_id = callback.from_user.id
+    stars = 15
+    required_money = stars * STARS_RATE
+    user = get_user(user_id)
+    
+    if user["balance"] < required_money:
+        await callback.message.edit_text(
+            f"❌ Недостаточно средств. Вам нужно ${required_money:,} для вывода {stars} ⭐.\n"
+            f"Ваш баланс: ${user['balance']:,}",
+            reply_markup=main_menu()
+        )
+        return
+
+    # Списываем деньги
+    new_balance = user["balance"] - required_money
+    update_user(user_id, balance=new_balance)
+
+    # Сохраняем заявку
+    now = int(time_module.time())
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO withdraw_requests (user_id, stars_amount, comment, status, created_at, processed_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, stars, '', 'approved', now, now)
+    )
+    request_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    # Получаем информацию о пользователе для админов
+    try:
+        user_info = await bot.get_chat(user_id)
+        user_name = user_info.full_name
+        user_username = f"@{user_info.username}" if user_info.username else f"ID {user_id}"
+    except:
+        user_name = "Неизвестно"
+        user_username = f"ID {user_id}"
+
+    # Уведомляем пользователя
+    await callback.message.edit_text(
+        f"✅ Заявка №{request_id} на вывод {stars} ⭐ принята!\n"
+        f"💸 С вашего баланса списано: ${required_money:,}\n"
+        f"💰 Новый баланс: ${new_balance:,}\n\n"
+        f"Ожидайте отправки звёзд в ближайшее время.",
+        reply_markup=main_menu()
+    )
+
+    # Уведомляем всех админов
+    admin_text = (
+        f"💰 **ЗАЯВКА НА ВЫВОД!**\n\n"
+        f"👤 Пользователь: {user_name}\n"
+        f"🔗 {user_username}\n"
+        f"🆔 ID: {user_id}\n"
+        f"⭐ Количество звёзд: {stars}\n"
+        f"💵 Сумма списания: ${required_money:,}\n"
+        f"🆔 Заявка №{request_id}\n\n"
+        f"📝 Нужно отправить пользователю {stars} звёзд.\n"
+        f"📞 Контакт: @artefakt_tg"
+    )
+
+    for admin_id in admin_users.keys():
+        try:
+            await bot.send_message(admin_id, admin_text, parse_mode="Markdown")
+        except Exception as e:
+            logging.error(f"Не удалось уведомить админа {admin_id}: {e}")
+
+@dp.callback_query(F.data == "withdraw_25")
+@subscription_required
+async def withdraw_25(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    user_id = callback.from_user.id
+    stars = 25
+    required_money = stars * STARS_RATE
+    user = get_user(user_id)
+    
+    if user["balance"] < required_money:
+        await callback.message.edit_text(
+            f"❌ Недостаточно средств. Вам нужно ${required_money:,} для вывода {stars} ⭐.\n"
+            f"Ваш баланс: ${user['balance']:,}",
+            reply_markup=main_menu()
+        )
+        return
+
+    # Списываем деньги
+    new_balance = user["balance"] - required_money
+    update_user(user_id, balance=new_balance)
+
+    # Сохраняем заявку
+    now = int(time_module.time())
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO withdraw_requests (user_id, stars_amount, comment, status, created_at, processed_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, stars, '', 'approved', now, now)
+    )
+    request_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    # Получаем информацию о пользователе для админов
+    try:
+        user_info = await bot.get_chat(user_id)
+        user_name = user_info.full_name
+        user_username = f"@{user_info.username}" if user_info.username else f"ID {user_id}"
+    except:
+        user_name = "Неизвестно"
+        user_username = f"ID {user_id}"
+
+    # Уведомляем пользователя
+    await callback.message.edit_text(
+        f"✅ Заявка №{request_id} на вывод {stars} ⭐ принята!\n"
+        f"💸 С вашего баланса списано: ${required_money:,}\n"
+        f"💰 Новый баланс: ${new_balance:,}\n\n"
+        f"Ожидайте отправки звёзд в ближайшее время.",
+        reply_markup=main_menu()
+    )
+
+    # Уведомляем всех админов
+    admin_text = (
+        f"💰 **ЗАЯВКА НА ВЫВОД!**\n\n"
+        f"👤 Пользователь: {user_name}\n"
+        f"🔗 {user_username}\n"
+        f"🆔 ID: {user_id}\n"
+        f"⭐ Количество звёзд: {stars}\n"
+        f"💵 Сумма списания: ${required_money:,}\n"
+        f"🆔 Заявка №{request_id}\n\n"
+        f"📝 Нужно отправить пользователю {stars} звёзд.\n"
+        f"📞 Контакт: @artefakt_tg"
+    )
+
+    for admin_id in admin_users.keys():
+        try:
+            await bot.send_message(admin_id, admin_text, parse_mode="Markdown")
+        except Exception as e:
+            logging.error(f"Не удалось уведомить админа {admin_id}: {e}")
+
+@dp.callback_query(F.data == "withdraw_info")
+@subscription_required
+async def withdraw_info(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    text = (
+        "⭐ Вывод Telegram Stars\n\n"
+        f"Курс: 10 000 000 $ = 1 ⭐\n"
+        "Доступные суммы вывода:\n"
+        f"• 15 ⭐ (150 000 000 $)\n"
+        f"• 25 ⭐ (250 000 000 $)\n\n"
+        "Нажмите на кнопку ниже для вывода:"
+    )
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 15 звёзд", callback_data="withdraw_15"))
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 25 звёзд", callback_data="withdraw_25"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"))
+    builder.adjust(1)
+    await callback.message.edit_text(text, reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data == "withdraw_15")
+@subscription_required
+async def withdraw_15(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
     # Отправляем команду напрямую через бота
     await bot.send_message(callback.from_user.id, "/withdraw 15")
     await callback.message.delete()
