@@ -18,12 +18,10 @@ DAILY_REWARD = 1000
 FUEL_PRICE = 2
 ADMIN_PASSWORD = "060510"
 
-# Курс вывода Telegram Stars
-STARS_RATE = 10_000_000  # 1 звезда = 10 000 000 $
+STARS_RATE = 10_000_000
 MIN_STARS = 15
 MAX_STARS = 25
 
-# Список спонсорских каналов (username без @)
 SPONSOR_CHANNELS = [
     "meduzakin1",
     "NikKatFUN",
@@ -66,7 +64,8 @@ def init_db():
             angry_passengers INTEGER DEFAULT 0,
             used_promocodes TEXT DEFAULT '[]',
             last_tip_reward_week INTEGER DEFAULT 0,
-            last_interest INTEGER DEFAULT 0
+            last_interest INTEGER DEFAULT 0,
+            factory_level INTEGER DEFAULT 0
         )
     """)
     
@@ -90,6 +89,8 @@ def init_db():
         cur.execute("ALTER TABLE users ADD COLUMN last_tip_reward_week INTEGER DEFAULT 0")
     if 'last_interest' not in columns:
         cur.execute("ALTER TABLE users ADD COLUMN last_interest INTEGER DEFAULT 0")
+    if 'factory_level' not in columns:
+        cur.execute("ALTER TABLE users ADD COLUMN factory_level INTEGER DEFAULT 0")
     
     cur.execute("""
         CREATE TABLE IF NOT EXISTS tip_race (
@@ -123,7 +124,6 @@ def init_db():
         )
     """)
     
-    # Таблица для вкладов
     cur.execute("""
         CREATE TABLE IF NOT EXISTS deposits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -133,7 +133,6 @@ def init_db():
         )
     """)
     
-    # Таблица для заявок на вывод
     cur.execute("""
         CREATE TABLE IF NOT EXISTS withdraw_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -180,17 +179,17 @@ def init_db():
 def get_user(user_id):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
-    cur.execute("SELECT balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy_passengers, angry_passengers, used_promocodes, last_tip_reward_week, last_interest FROM users WHERE user_id = ?", (user_id,))
+    cur.execute("SELECT balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy_passengers, angry_passengers, used_promocodes, last_tip_reward_week, last_interest, factory_level FROM users WHERE user_id = ?", (user_id,))
     row = cur.fetchone()
     if row is None:
         cur.execute(
-            "INSERT INTO users (user_id, balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy_passengers, angry_passengers, used_promocodes, last_tip_reward_week, last_interest) VALUES (?, ?, 0, 0, '[]', 0, 0, 1, '[]', 0, 0, '[]', 0, 0)",
+            "INSERT INTO users (user_id, balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy_passengers, angry_passengers, used_promocodes, last_tip_reward_week, last_interest, factory_level) VALUES (?, ?, 0, 0, '[]', 0, 0, 1, '[]', 0, 0, '[]', 0, 0, 0)",
             (user_id, START_BALANCE)
         )
         conn.commit()
-        balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy, angry, used, last_tip, last_interest = START_BALANCE, 0, 0, '[]', 0, 0, 1, '[]', 0, 0, '[]', 0, 0
+        balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy, angry, used, last_tip, last_interest, factory_level = START_BALANCE, 0, 0, '[]', 0, 0, 1, '[]', 0, 0, '[]', 0, 0, 0
     else:
-        balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy, angry, used, last_tip, last_interest = row
+        balance, debt, last_daily, cars, credits_count, exp, level, hired_cars, happy, angry, used, last_tip, last_interest, factory_level = row
     conn.close()
     cars_list = json.loads(cars)
     if cars_list and isinstance(cars_list[0], int):
@@ -212,7 +211,8 @@ def get_user(user_id):
         "angry": angry,
         "used_promocodes": used_list,
         "last_tip_reward_week": last_tip,
-        "last_interest": last_interest
+        "last_interest": last_interest,
+        "factory_level": factory_level
     }
 
 def update_user(user_id, **kwargs):
@@ -403,7 +403,6 @@ async def tip_race_scheduler():
         else:
             await asyncio.sleep(1800)
 
-# ---------- ПРОВЕРКА ПОДПИСОК НА СПОНСОРОВ ----------
 async def check_user_subscriptions(user_id: int) -> tuple[bool, list]:
     not_subscribed = []
     for channel in SPONSOR_CHANNELS:
@@ -464,7 +463,6 @@ async def check_sponsors_callback(callback: types.CallbackQuery, **kwargs):
         logging.warning(f"Не удалось удалить сообщение: {e}")
     await callback.message.answer("✅ Спасибо за подписку! Добро пожаловать обратно.", reply_markup=main_menu())
 
-# ---------- ЕЖЕДНЕВНАЯ ПРОВЕРКА ПОДПИСОК ----------
 async def daily_subscription_check():
     while True:
         await asyncio.sleep(24 * 60 * 60)
@@ -495,7 +493,6 @@ async def daily_subscription_check():
                     logging.error(f"Не удалось отправить уведомление {user_id}: {e}")
             await asyncio.sleep(0.5)
 
-# ---------- ФУНКЦИИ ДЛЯ ВКЛАДОВ ----------
 def get_user_deposits(user_id):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -541,7 +538,6 @@ def apply_deposit_interest(deposit_id):
     conn.close()
     return amount, 0
 
-# ---------- СИСТЕМА ВЫВОДА В TELEGRAM STARS ----------
 def get_withdraw_requests(user_id=None, limit=20):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -556,7 +552,6 @@ def get_withdraw_requests(user_id=None, limit=20):
 @dp.message(Command("withdraw"))
 @subscription_required
 async def cmd_withdraw_stars(message: types.Message, **kwargs):
-    """Создание заявки на вывод Telegram Stars"""
     user_id = message.from_user.id
     args = message.text.split(maxsplit=2)
     if len(args) < 2:
@@ -564,7 +559,7 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
             "❌ Использование: /withdraw <количество звёзд> [комментарий]\n"
             f"Минимум: {MIN_STARS} ⭐, максимум: {MAX_STARS} ⭐.\n"
             f"Курс: 10 000 000 $ = 1 ⭐.\n"
-            f"Пример: /withdraw 15 Номер карты 1234"
+            f"Пример: /withdraw 15"
         )
         return
     try:
@@ -586,11 +581,9 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
         )
         return
 
-    # Сразу списываем деньги (без подтверждения админа)
     new_balance = user["balance"] - required_money
     update_user(user_id, balance=new_balance)
 
-    # Создаём заявку в БД (для истории и учёта)
     now = int(time_module.time())
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -601,22 +594,110 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
     conn.commit()
     conn.close()
 
-    # Отправляем пользователю финальное сообщение
     await message.reply(
-        f"✅ **Заявка принята!**\n"
+        f"✅ Заявка принята!\n"
         f"Напишите нам для получения звёзд: @artefakt_tg\n\n"
-        f"💸 С вашего баланса списалось: **${required_money:,}**\n"
-        f"💰 Новый баланс: **${new_balance:,}**",
-        parse_mode="Markdown"
+        f"💸 С вашего баланса списалось: ${required_money:,}\n"
+        f"💰 Новый баланс: ${new_balance:,}"
     )
 
-# ---------- КЛАВИАТУРЫ ----------
+@dp.message(Command("tap"))
+@subscription_required
+async def cmd_tap(message: types.Message, **kwargs):
+    user_id = message.from_user.id
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("SELECT factory_level FROM users WHERE user_id = ?", (user_id,))
+    row = cur.fetchone()
+    level = row[0] if row else 0
+    conn.close()
+
+    income_map = {
+        0: 1, 1: 2, 2: 4, 3: 6, 4: 10,
+        5: 15, 6: 20, 7: 50, 8: 100
+    }
+    income = income_map.get(level, 1)
+
+    user = get_user(user_id)
+    new_balance = user["balance"] + income
+    update_user(user_id, balance=new_balance)
+
+    await message.reply(f"🏭 +{income}$", reply_markup=main_menu())
+
+@dp.message(Command("upgrade"))
+@subscription_required
+async def cmd_upgrade(message: types.Message, **kwargs):
+    user_id = message.from_user.id
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("SELECT factory_level FROM users WHERE user_id = ?", (user_id,))
+    row = cur.fetchone()
+    level = row[0] if row else 0
+    conn.close()
+
+    upgrade_map = {
+        0: {"next_income": 2, "price": 15000},
+        1: {"next_income": 4, "price": 30000},
+        2: {"next_income": 6, "price": 60000},
+        3: {"next_income": 10, "price": 100000},
+        4: {"next_income": 15, "price": 300000},
+        5: {"next_income": 20, "price": 500000},
+        6: {"next_income": 50, "price": 1000000},
+        7: {"next_income": 100, "price": 2000000},
+    }
+    if level not in upgrade_map:
+        await message.reply("❌ Максимальный уровень достигнут!")
+        return
+
+    price = upgrade_map[level]["price"]
+    user = get_user(user_id)
+    if user["balance"] < price:
+        await message.reply(f"❌ Недостаточно средств. Нужно ${price:,}")
+        return
+
+    new_balance = user["balance"] - price
+    update_user(user_id, balance=new_balance)
+
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET factory_level = ? WHERE user_id = ?", (level + 1, user_id))
+    conn.commit()
+    conn.close()
+
+    await message.reply(
+        f"✅ Завод улучшен!\n"
+        f"💰 Доход за клик теперь: {upgrade_map[level]['next_income']}$\n"
+        f"💸 С вас списано: ${price:,}\n"
+        f"📊 Новый баланс: ${new_balance:,}"
+    )
+
+@dp.message(Command("balance"))
+@subscription_required
+async def cmd_balance(message: types.Message, **kwargs):
+    user = get_user(message.from_user.id)
+    await message.reply(f"💰 Ваш баланс: ${user['balance']:,}")
+
+@dp.message(Command("get_factory_level"))
+@subscription_required
+async def cmd_get_factory_level(message: types.Message, **kwargs):
+    user_id = message.from_user.id
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute("SELECT factory_level FROM users WHERE user_id = ?", (user_id,))
+    row = cur.fetchone()
+    level = row[0] if row else 0
+    conn.close()
+    incomes = [1, 2, 4, 6, 10, 15, 20, 50, 100]
+    income = incomes[level] if level < len(incomes) else 100
+    await message.reply(f"🏭 Уровень завода: {level}\n💰 Доход за клик: {income}$")
+
 def main_menu():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(text="🚖 Работать", callback_data="work_main"))
     builder.add(InlineKeyboardButton(text="🏦 Банк", callback_data="bank_main"))
     builder.add(InlineKeyboardButton(text="📊 Мой статус", callback_data="status"))
     builder.add(InlineKeyboardButton(text="🎁 Ежедневная награда", callback_data="daily"))
+    builder.add(InlineKeyboardButton(text="⭐ Вывести", callback_data="withdraw_info"))
     builder.add(InlineKeyboardButton(text="👑 Админ панель", callback_data="admin_panel"))
     builder.add(InlineKeyboardButton(text="🏆 Топ игроков", callback_data="top_players"))
     builder.add(InlineKeyboardButton(text="🎫 Промокоды", callback_data="promocode_menu"))
@@ -689,7 +770,6 @@ def admin_menu():
     builder.adjust(1)
     return builder.as_markup()
 
-# ---------- ОСНОВНЫЕ КОМАНДЫ ----------
 @dp.message(Command("start"))
 @subscription_required
 async def cmd_start(message: types.Message, **kwargs):
@@ -724,6 +804,10 @@ async def cmd_commands(message: types.Message, **kwargs):
 /promo <код> - Активировать промокод
 /deposit <сумма> - Положить деньги на вклад (от 20 000 до 100 000$, максимум 2 вклада, каждый до 500 000$, +2% каждые 2 дня)
 /withdraw <количество звёзд> - Запросить вывод Telegram Stars (от 15 до 25 звёзд, курс 10 млн $ за 1 звезду)
+/tap - Кликнуть по заводу (заработок от уровня завода)
+/upgrade - Улучшить завод (увеличить доход за клик)
+/balance - Показать баланс
+/get_factory_level - Показать уровень завода
 
 🎮 **Игровые механики:**
 • Работа таксистом — зарабатывайте деньги, тратьте топливо
@@ -740,6 +824,7 @@ async def cmd_commands(message: types.Message, **kwargs):
 • Гонка чаевых — соревнуйтесь с другими игроками за призы
 • Вклады — кладите деньги под 2% каждые 2 дня (до 2 вкладов, макс. 500 000$ на вклад)
 • Вывод Telegram Stars — обменивайте внутриигровые деньги на реальные звёзды (15–25 ⭐, курс 10 млн $ за 1 ⭐)
+• Кликер-завод — нажимайте на кнопку и зарабатывайте, улучшайте завод
 
 ⚠️ Кредиты нужно вовремя погашать, иначе проценты быстро увеличат долг!
     """
@@ -758,7 +843,6 @@ async def cmd_admin(message: types.Message, **kwargs):
     else:
         await message.reply("❌ Неверный пароль!")
 
-# ---------- ОБРАБОТЧИКИ ДЛЯ ПОДМЕНЮ ----------
 @dp.callback_query(F.data == "work_main")
 @subscription_required
 async def work_main(callback: types.CallbackQuery, **kwargs):
@@ -788,7 +872,25 @@ async def back_to_menu(callback: types.CallbackQuery, **kwargs):
         logging.warning(f"Не удалось удалить сообщение: {e}")
     await callback.message.answer("Главное меню:", reply_markup=main_menu())
 
-# ---------- ИГРОВЫЕ ХЕНДЛЕРЫ ----------
+@dp.callback_query(F.data == "withdraw_info")
+@subscription_required
+async def withdraw_info(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    text = (
+        "⭐ **Вывод Telegram Stars**\n\n"
+        f"Курс: 10 000 000 $ = 1 ⭐\n"
+        f"Минимум: {MIN_STARS} ⭐, максимум: {MAX_STARS} ⭐\n\n"
+        "Как вывести:\n"
+        "1. Накопите достаточно денег на балансе.\n"
+        "2. Отправьте команду:\n"
+        f"`/withdraw <количество звёзд>`\n"
+        f"Пример: `/withdraw 15`\n\n"
+        "После отправки заявки средства будут списаны, и вам нужно будет написать @artefakt_tg для получения звёзд."
+    )
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"))
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="Markdown")
+
 @dp.callback_query(F.data == "status")
 @subscription_required
 async def show_status(callback: types.CallbackQuery, **kwargs):
@@ -1368,7 +1470,6 @@ async def tip_race_menu(callback: types.CallbackQuery, **kwargs):
         logging.warning(f"Не удалось удалить сообщение: {e}")
     await callback.message.answer(text, reply_markup=builder.as_markup(), parse_mode="Markdown")
 
-# ---------- ОБРАБОТЧИКИ ДЛЯ ВКЛАДОВ ----------
 @dp.callback_query(F.data == "deposits_menu")
 @subscription_required
 async def show_deposits(callback: types.CallbackQuery, **kwargs):
@@ -1440,7 +1541,6 @@ async def close_deposit_callback(callback: types.CallbackQuery, **kwargs):
         reply_markup=bank_submenu()
     )
 
-# ---------- КОМАНДЫ (MESSAGE HANDLERS) ----------
 @dp.message(Command("loan"))
 @subscription_required
 async def take_loan(message: types.Message, **kwargs):
@@ -2059,7 +2159,8 @@ async def admin_reset_all_execute(callback: types.CallbackQuery, **kwargs):
             angry_passengers = 0,
             used_promocodes = '[]',
             last_tip_reward_week = 0,
-            last_interest = 0
+            last_interest = 0,
+            factory_level = 0
     """, (START_BALANCE,))
     cur.execute("DELETE FROM tip_race")
     cur.execute("DELETE FROM deposits")
@@ -2104,7 +2205,6 @@ async def admin_withdraw_list(callback: types.CallbackQuery, **kwargs):
     builder.add(InlineKeyboardButton(text="🔙 Назад", callback_data="admin_panel"))
     await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="Markdown")
 
-# ---------- РАССЫЛКА ----------
 async def send_broadcast_message(chat_id: int):
     text = (
         "🚖 **Таксист ждёт тебя!**\n\n"
@@ -2175,7 +2275,6 @@ async def admin_broadcast_execute(callback: types.CallbackQuery, **kwargs):
         reply_markup=admin_menu()
     )
 
-# ---------- ЗАПУСК ----------
 async def main():
     init_db()
     print("Бот запущен...")
