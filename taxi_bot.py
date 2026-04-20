@@ -595,6 +595,15 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
     conn.commit()
     conn.close()
 
+    # Получаем информацию о пользователе для админов
+    try:
+        user_info = await bot.get_chat(user_id)
+        user_name = user_info.full_name
+        user_username = f"@{user_info.username}" if user_info.username else f"ID {user_id}"
+    except:
+        user_name = "Неизвестно"
+        user_username = f"ID {user_id}"
+
     # Уведомляем пользователя
     await message.reply(
         f"✅ Заявка №{request_id} на вывод {stars} ⭐ принята!\n"
@@ -604,15 +613,16 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
     )
 
     # Уведомляем всех админов (без кнопок)
-    mention = f"@{message.from_user.username}" if message.from_user.username else f"ID {user_id}"
     admin_text = (
         f"💰 **ЗАЯВКА НА ВЫВОД!**\n\n"
-        f"👤 Пользователь: {mention}\n"
+        f"👤 Пользователь: {user_name}\n"
+        f"🔗 {user_username}\n"
         f"🆔 ID: {user_id}\n"
         f"⭐ Количество звёзд: {stars}\n"
         f"💵 Сумма списания: ${required_money:,}\n"
         f"🆔 Заявка №{request_id}\n\n"
-        f"📝 Нужно отправить пользователю {stars} звёзд."
+        f"📝 Нужно отправить пользователю {stars} звёзд.\n"
+        f"📞 Контакт: @artefakt_tg"
     )
 
     for admin_id in admin_users.keys():
@@ -620,6 +630,51 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
             await bot.send_message(admin_id, admin_text, parse_mode="Markdown")
         except Exception as e:
             logging.error(f"Не удалось уведомить админа {admin_id}: {e}")
+
+@dp.callback_query(F.data == "withdraw_info")
+@subscription_required
+async def withdraw_info(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    text = (
+        "⭐ Вывод Telegram Stars\n\n"
+        f"Курс: 10 000 000 $ = 1 ⭐\n"
+        "Доступные суммы вывода:\n"
+        f"• 15 ⭐ (150 000 000 $)\n"
+        f"• 25 ⭐ (250 000 000 $)\n\n"
+        "Нажмите на кнопку ниже для вывода:"
+    )
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 15 звёзд", callback_data="withdraw_15"))
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 25 звёзд", callback_data="withdraw_25"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"))
+    builder.adjust(1)
+    await callback.message.edit_text(text, reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data == "withdraw_15")
+@subscription_required
+async def withdraw_15(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    fake_message = types.Message(
+        message_id=callback.message.message_id,
+        from_user=callback.from_user,
+        chat=callback.message.chat,
+        text="/withdraw 15",
+        date=callback.message.date
+    )
+    await cmd_withdraw_stars(fake_message)
+
+@dp.callback_query(F.data == "withdraw_25")
+@subscription_required
+async def withdraw_25(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    fake_message = types.Message(
+        message_id=callback.message.message_id,
+        from_user=callback.from_user,
+        chat=callback.message.chat,
+        text="/withdraw 25",
+        date=callback.message.date
+    )
+    await cmd_withdraw_stars(fake_message)
 
 @dp.message(Command("tap"))
 @subscription_required
