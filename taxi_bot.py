@@ -666,6 +666,88 @@ async def withdraw_25(callback: types.CallbackQuery, **kwargs):
     await bot.send_message(callback.from_user.id, "/withdraw 25")
     await callback.message.delete()
 
+@dp.message(Command("withdraw"))
+@subscription_required
+async def cmd_withdraw_stars(message: types.Message, **kwargs):
+    """Создание заявки на вывод Telegram Stars (только 15 или 25 звёзд)"""
+    user_id = message.from_user.id
+    args = message.text.split()
+    if len(args) != 2:
+        await message.reply(
+            "❌ Использование: /withdraw 15 или /withdraw 25\n\n"
+            "⭐ Минимальный вывод: 15 звёзд\n"
+            "⭐ Максимальный вывод: 25 звёзд"
+        )
+        return
+    try:
+        stars = int(args[1])
+        if stars not in [15, 25]:
+            raise ValueError
+    except ValueError:
+        await message.reply("❌ Можно вывести только 15 или 25 звёзд.")
+        return
+
+    required_money = stars * STARS_RATE
+    user = get_user(user_id)
+    if user["balance"] < required_money:
+        await message.reply(
+            f"❌ Недостаточно средств. Вам нужно ${required_money:,} для вывода {stars} ⭐.\n"
+            f"Ваш баланс: ${user['balance']:,}"
+        )
+        return
+
+    # Списываем деньги
+    new_balance = user["balance"] - required_money
+    update_user(user_id, balance=new_balance)
+
+    # Сохраняем заявку
+    now = int(time_module.time())
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO withdraw_requests (user_id, stars_amount, comment, status, created_at, processed_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, stars, '', 'approved', now, now)
+    )
+    request_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    # Получаем информацию о пользователе для админов
+    try:
+        user_info = await bot.get_chat(user_id)
+        user_name = user_info.full_name
+        user_username = f"@{user_info.username}" if user_info.username else f"ID {user_id}"
+    except:
+        user_name = "Неизвестно"
+        user_username = f"ID {user_id}"
+
+    # Уведомляем пользователя
+    await message.reply(
+        f"✅ Заявка №{request_id} на вывод {stars} ⭐ принята!\n"
+        f"💸 С вашего баланса списано: ${required_money:,}\n"
+        f"💰 Новый баланс: ${new_balance:,}\n\n"
+        f"Ожидайте отправки звёзд в ближайшее время."
+    )
+
+    # Уведомляем всех админов
+    admin_text = (
+        f"💰 **ЗАЯВКА НА ВЫВОД!**\n\n"
+        f"👤 Пользователь: {user_name}\n"
+        f"🔗 {user_username}\n"
+        f"🆔 ID: {user_id}\n"
+        f"⭐ Количество звёзд: {stars}\n"
+        f"💵 Сумма списания: ${required_money:,}\n"
+        f"🆔 Заявка №{request_id}\n\n"
+        f"📝 Нужно отправить пользователю {stars} звёзд.\n"
+        f"📞 Контакт: @artefakt_tg"
+    )
+
+    for admin_id in admin_users.keys():
+        try:
+            await bot.send_message(admin_id, admin_text, parse_mode="Markdown")
+        except Exception as e:
+            logging.error(f"Не удалось уведомить админа {admin_id}: {e}")
+
 @dp.callback_query(F.data == "withdraw_info")
 @subscription_required
 async def withdraw_info(callback: types.CallbackQuery, **kwargs):
@@ -689,27 +771,17 @@ async def withdraw_info(callback: types.CallbackQuery, **kwargs):
 @subscription_required
 async def withdraw_15(callback: types.CallbackQuery, **kwargs):
     await callback.answer()
-    fake_message = types.Message(
-        message_id=callback.message.message_id,
-        from_user=callback.from_user,
-        chat=callback.message.chat,
-        text="/withdraw 15",
-        date=callback.message.date
-    )
-    await cmd_withdraw_stars(fake_message)
+    # Просто отправляем команду в чат
+    await bot.send_message(callback.from_user.id, "/withdraw 15")
+    await callback.message.delete()
 
 @dp.callback_query(F.data == "withdraw_25")
 @subscription_required
 async def withdraw_25(callback: types.CallbackQuery, **kwargs):
     await callback.answer()
-    fake_message = types.Message(
-        message_id=callback.message.message_id,
-        from_user=callback.from_user,
-        chat=callback.message.chat,
-        text="/withdraw 25",
-        date=callback.message.date
-    )
-    await cmd_withdraw_stars(fake_message)
+    # Просто отправляем команду в чат
+    await bot.send_message(callback.from_user.id, "/withdraw 25")
+    await callback.message.delete()
 
 @dp.message(Command("tap"))
 @subscription_required
