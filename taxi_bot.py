@@ -612,7 +612,7 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
         f"Ожидайте отправки звёзд в ближайшее время."
     )
 
-    # Уведомляем всех админов (без кнопок)
+    # Уведомляем всех админов
     admin_text = (
         f"💰 **ЗАЯВКА НА ВЫВОД!**\n\n"
         f"👤 Пользователь: {user_name}\n"
@@ -630,6 +630,41 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
             await bot.send_message(admin_id, admin_text, parse_mode="Markdown")
         except Exception as e:
             logging.error(f"Не удалось уведомить админа {admin_id}: {e}")
+
+@dp.callback_query(F.data == "withdraw_info")
+@subscription_required
+async def withdraw_info(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    text = (
+        "⭐ Вывод Telegram Stars\n\n"
+        f"Курс: 10 000 000 $ = 1 ⭐\n"
+        "Доступные суммы вывода:\n"
+        f"• 15 ⭐ (150 000 000 $)\n"
+        f"• 25 ⭐ (250 000 000 $)\n\n"
+        "Нажмите на кнопку ниже для вывода:"
+    )
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 15 звёзд", callback_data="withdraw_15"))
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 25 звёзд", callback_data="withdraw_25"))
+    builder.add(InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"))
+    builder.adjust(1)
+    await callback.message.edit_text(text, reply_markup=builder.as_markup())
+
+@dp.callback_query(F.data == "withdraw_15")
+@subscription_required
+async def withdraw_15(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    # Отправляем команду напрямую через бота
+    await bot.send_message(callback.from_user.id, "/withdraw 15")
+    await callback.message.delete()
+
+@dp.callback_query(F.data == "withdraw_25")
+@subscription_required
+async def withdraw_25(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    # Отправляем команду напрямую через бота
+    await bot.send_message(callback.from_user.id, "/withdraw 25")
+    await callback.message.delete()
 
 @dp.callback_query(F.data == "withdraw_info")
 @subscription_required
