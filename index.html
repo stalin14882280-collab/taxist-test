@@ -186,17 +186,6 @@
             border-radius: 40px;
             padding: 8px;
         }
-        .sync-btn {
-            background: #2a2418;
-            border: 1px solid #ffd966;
-            color: #ffd966;
-            padding: 8px 16px;
-            border-radius: 40px;
-            margin-top: 10px;
-            width: 100%;
-            cursor: pointer;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -224,7 +213,6 @@
         <div class="section-title">📈 Улучшить завод</div>
         <div class="upgrade-grid" id="upgradesContainer"></div>
         <div class="current-level" id="currentLevelInfo"></div>
-        <button class="sync-btn" id="syncBtn">🔄 Синхронизировать баланс и уровень</button>
     </div>
 </div>
 
@@ -265,20 +253,34 @@
         setTimeout(() => div.remove(), 600);
     }
 
-    function tap(event) {
+    async function tap(event) {
         const rect = event.target.closest('.click-circle').getBoundingClientRect();
         const x = rect.left + rect.width / 2 - 30;
         const y = rect.top - 20;
         showFloatingNumber(currentIncome, x, y);
+        
+        // Отправляем команду /tap для начисления дохода
         sendCommand('/tap');
+        
+        // Локально обновляем баланс
         const balanceSpan = document.getElementById('balance');
         let currentBalance = parseInt(balanceSpan.innerText.replace(/[^0-9]/g, '')) || 0;
         balanceSpan.innerText = (currentBalance + currentIncome).toLocaleString();
     }
 
-    function upgrade(income, price, index) {
+    async function upgradeFactory(income, price, index) {
+        // Отправляем команду /upgrade боту
         sendCommand('/upgrade');
-        setTimeout(() => sync(), 1000);
+        
+        // Локально обновляем доход и уровень
+        currentIncome = income;
+        currentLevel = index + 1;
+        renderUpgrades();
+        
+        // Обновляем отображение баланса (вычитаем цену улучшения)
+        const balanceSpan = document.getElementById('balance');
+        let currentBalance = parseInt(balanceSpan.innerText.replace(/[^0-9]/g, '')) || 0;
+        balanceSpan.innerText = (currentBalance - price).toLocaleString();
     }
 
     function renderUpgrades() {
@@ -287,10 +289,11 @@
         for (let i = 0; i < upgrades.length; i++) {
             const up = upgrades[i];
             const isPurchased = currentLevel > i;
+            const isAvailable = currentLevel === i;
             const card = document.createElement('div');
             card.className = 'upgrade-card' + (isPurchased ? ' disabled-upgrade' : '');
-            if (!isPurchased) {
-                card.onclick = () => upgrade(up.income, up.price, i);
+            if (isAvailable) {
+                card.onclick = () => upgradeFactory(up.income, up.price, i);
             }
             card.innerHTML = `
                 <div class="upgrade-name">Уровень ${i+1}</div>
@@ -303,22 +306,20 @@
         document.getElementById('currentLevelInfo').innerHTML = `Текущий уровень: ${currentLevel} (доход за клик: ${currentIncome}$)`;
     }
 
-    function sync() {
+    // Загрузка данных при старте
+    window.onload = async () => {
+        // Запрашиваем текущий баланс и уровень у бота
         sendCommand('/balance');
         sendCommand('/get_factory_level');
-        tg.showAlert('Запрос отправлен. Баланс и уровень появятся в чате.');
-    }
-
-    window.onload = () => {
-        sendCommand('/balance');
-        sendCommand('/get_factory_level');
+        
+        // Показываем заглушку
         document.getElementById('balance').innerText = '?';
     };
 
+    // Обработчики кнопок
     document.getElementById('clickCircle').addEventListener('click', tap);
     document.getElementById('withdraw15Btn').addEventListener('click', () => sendCommand('/withdraw 15'));
     document.getElementById('withdraw25Btn').addEventListener('click', () => sendCommand('/withdraw 25'));
-    document.getElementById('syncBtn').addEventListener('click', sync);
 
     renderUpgrades();
 </script>
