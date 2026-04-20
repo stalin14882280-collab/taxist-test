@@ -552,26 +552,23 @@ def get_withdraw_requests(user_id=None, limit=20):
 @dp.message(Command("withdraw"))
 @subscription_required
 async def cmd_withdraw_stars(message: types.Message, **kwargs):
-    """Создание заявки на вывод Telegram Stars"""
+    """Создание заявки на вывод Telegram Stars (только 15 или 25 звёзд)"""
     user_id = message.from_user.id
-    args = message.text.split(maxsplit=2)
-    if len(args) < 2:
+    args = message.text.split()
+    if len(args) != 2:
         await message.reply(
-            "❌ Использование: /withdraw <количество звёзд> [комментарий]\n"
-            f"Минимум: {MIN_STARS} ⭐, максимум: {MAX_STARS} ⭐.\n"
-            f"Курс: 10 000 000 $ = 1 ⭐.\n"
-            f"Пример: /withdraw 15"
+            "❌ Использование: /withdraw 15 или /withdraw 25\n\n"
+            "⭐ Минимальный вывод: 15 звёзд\n"
+            "⭐ Максимальный вывод: 25 звёзд"
         )
         return
     try:
         stars = int(args[1])
-        if stars < MIN_STARS or stars > MAX_STARS:
+        if stars not in [15, 25]:
             raise ValueError
     except ValueError:
-        await message.reply(f"❌ Количество звёзд должно быть целым числом от {MIN_STARS} до {MAX_STARS}.")
+        await message.reply("❌ Можно вывести только 15 или 25 звёзд.")
         return
-
-    comment = args[2] if len(args) == 3 else ""
 
     required_money = stars * STARS_RATE
     user = get_user(user_id)
@@ -582,25 +579,47 @@ async def cmd_withdraw_stars(message: types.Message, **kwargs):
         )
         return
 
+    # Списываем деньги
     new_balance = user["balance"] - required_money
     update_user(user_id, balance=new_balance)
 
+    # Сохраняем заявку
     now = int(time_module.time())
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO withdraw_requests (user_id, stars_amount, comment, status, created_at, processed_at) VALUES (?, ?, ?, ?, ?, ?)",
-        (user_id, stars, comment, 'approved', now, now)
+        (user_id, stars, '', 'approved', now, now)
     )
+    request_id = cur.lastrowid
     conn.commit()
     conn.close()
 
+    # Уведомляем пользователя
     await message.reply(
-        f"✅ Заявка принята!\n"
-        f"Напишите нам для получения звёзд: @artefakt_tg\n\n"
-        f"💸 С вашего баланса списалось: ${required_money:,}\n"
-        f"💰 Новый баланс: ${new_balance:,}"
+        f"✅ Заявка №{request_id} на вывод {stars} ⭐ принята!\n"
+        f"💸 С вашего баланса списано: ${required_money:,}\n"
+        f"💰 Новый баланс: ${new_balance:,}\n\n"
+        f"Ожидайте отправки звёзд в ближайшее время."
     )
+
+    # Уведомляем всех админов (без кнопок)
+    mention = f"@{message.from_user.username}" if message.from_user.username else f"ID {user_id}"
+    admin_text = (
+        f"💰 **ЗАЯВКА НА ВЫВОД!**\n\n"
+        f"👤 Пользователь: {mention}\n"
+        f"🆔 ID: {user_id}\n"
+        f"⭐ Количество звёзд: {stars}\n"
+        f"💵 Сумма списания: ${required_money:,}\n"
+        f"🆔 Заявка №{request_id}\n\n"
+        f"📝 Нужно отправить пользователю {stars} звёзд."
+    )
+
+    for admin_id in admin_users.keys():
+        try:
+            await bot.send_message(admin_id, admin_text, parse_mode="Markdown")
+        except Exception as e:
+            logging.error(f"Не удалось уведомить админа {admin_id}: {e}")
 
 @dp.message(Command("tap"))
 @subscription_required
@@ -880,18 +899,43 @@ async def withdraw_info(callback: types.CallbackQuery, **kwargs):
     text = (
         "⭐ Вывод Telegram Stars\n\n"
         f"Курс: 10 000 000 $ = 1 ⭐\n"
-        f"Минимум: {MIN_STARS} ⭐, максимум: {MAX_STARS} ⭐\n\n"
-        "Как вывести:\n"
-        "1. Накопите достаточно денег на балансе.\n"
-        "2. Отправьте команду:\n"
-        f"/withdraw <количество звёзд>\n"
-        f"Пример: /withdraw 15\n\n"
-        "После отправки заявки средства будут списаны, и вам нужно будет написать @artefakt_tg для получения звёзд."
+        "Доступные суммы вывода:\n"
+        f"• 15 ⭐ (150 000 000 $)\n"
+        f"• 25 ⭐ (250 000 000 $)\n\n"
+        "Нажмите на кнопку ниже для вывода:"
     )
     builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 15 звёзд", callback_data="withdraw_15"))
+    builder.add(InlineKeyboardButton(text="⭐ Вывести 25 звёзд", callback_data="withdraw_25"))
     builder.add(InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"))
+    builder.adjust(1)
     await callback.message.edit_text(text, reply_markup=builder.as_markup())
 
+@dp.callback_query(F.data == "withdraw_15")
+@subscription_required
+async def withdraw_15(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    fake_message = types.Message(
+        message_id=callback.message.message_id,
+        from_user=callback.from_user,
+        chat=callback.message.chat,
+        text="/withdraw 15",
+        date=callback.message.date
+    )
+    await cmd_withdraw_stars(fake_message)
+
+@dp.callback_query(F.data == "withdraw_25")
+@subscription_required
+async def withdraw_25(callback: types.CallbackQuery, **kwargs):
+    await callback.answer()
+    fake_message = types.Message(
+        message_id=callback.message.message_id,
+        from_user=callback.from_user,
+        chat=callback.message.chat,
+        text="/withdraw 25",
+        date=callback.message.date
+    )
+    await cmd_withdraw_stars(fake_message)
 @dp.callback_query(F.data == "status")
 @subscription_required
 async def show_status(callback: types.CallbackQuery, **kwargs):
