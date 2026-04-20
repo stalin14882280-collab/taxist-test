@@ -878,19 +878,19 @@ async def back_to_menu(callback: types.CallbackQuery, **kwargs):
 async def withdraw_info(callback: types.CallbackQuery, **kwargs):
     await callback.answer()
     text = (
-        "⭐ **Вывод Telegram Stars**\n\n"
-        f"Курс: 10 000 000 $ = 1 ⭐\n"
+        "⭐ Вывод Telegram Stars\n\n"
+        f"Курс: 10 000 000 $ = 1 ⭐\n"
         f"Минимум: {MIN_STARS} ⭐, максимум: {MAX_STARS} ⭐\n\n"
         "Как вывести:\n"
         "1. Накопите достаточно денег на балансе.\n"
         "2. Отправьте команду:\n"
-        f"`/withdraw <количество звёзд>`\n"
-        f"Пример: `/withdraw 15`\n\n"
+        f"/withdraw <количество звёзд>\n"
+        f"Пример: /withdraw 15\n\n"
         "После отправки заявки средства будут списаны, и вам нужно будет написать @artefakt_tg для получения звёзд."
     )
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"))
-    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="Markdown")
+    await callback.message.edit_text(text, reply_markup=builder.as_markup())
 
 @dp.callback_query(F.data == "status")
 @subscription_required
