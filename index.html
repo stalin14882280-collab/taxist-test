@@ -186,6 +186,9 @@
             border-radius: 40px;
             padding: 8px;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -223,6 +226,7 @@
 
     let currentIncome = 1;
     let currentLevel = 0;
+    let currentBalance = 0;
 
     const upgrades = [
         { income: 2, price: 15000 },
@@ -235,6 +239,7 @@
         { income: 100, price: 2000000 }
     ];
 
+    // Отправка команды в чат бота
     function sendCommand(cmd) {
         try {
             tg.sendData(cmd);
@@ -243,6 +248,7 @@
         }
     }
 
+    // Анимация всплывающей суммы
     function showFloatingNumber(amount, x, y) {
         const div = document.createElement('div');
         div.className = 'floating-number';
@@ -253,36 +259,28 @@
         setTimeout(() => div.remove(), 600);
     }
 
+    // Обработчик клика по заводу
     async function tap(event) {
         const rect = event.target.closest('.click-circle').getBoundingClientRect();
         const x = rect.left + rect.width / 2 - 30;
         const y = rect.top - 20;
         showFloatingNumber(currentIncome, x, y);
         
-        // Отправляем команду /tap для начисления дохода
+        // Отправляем команду /tap боту
         sendCommand('/tap');
         
-        // Локально обновляем баланс
-        const balanceSpan = document.getElementById('balance');
-        let currentBalance = parseInt(balanceSpan.innerText.replace(/[^0-9]/g, '')) || 0;
-        balanceSpan.innerText = (currentBalance + currentIncome).toLocaleString();
+        // Локально увеличиваем баланс (оптимистичное обновление)
+        currentBalance += currentIncome;
+        updateBalanceDisplay();
     }
 
-    async function upgradeFactory(income, price, index) {
-        // Отправляем команду /upgrade боту
-        sendCommand('/upgrade');
-        
-        // Локально обновляем доход и уровень
-        currentIncome = income;
-        currentLevel = index + 1;
-        renderUpgrades();
-        
-        // Обновляем отображение баланса (вычитаем цену улучшения)
+    // Обновление отображения баланса на экране
+    function updateBalanceDisplay() {
         const balanceSpan = document.getElementById('balance');
-        let currentBalance = parseInt(balanceSpan.innerText.replace(/[^0-9]/g, '')) || 0;
-        balanceSpan.innerText = (currentBalance - price).toLocaleString();
+        balanceSpan.innerText = currentBalance.toLocaleString();
     }
 
+    // Обновление интерфейса улучшений и дохода
     function renderUpgrades() {
         const container = document.getElementById('upgradesContainer');
         container.innerHTML = '';
@@ -306,22 +304,92 @@
         document.getElementById('currentLevelInfo').innerHTML = `Текущий уровень: ${currentLevel} (доход за клик: ${currentIncome}$)`;
     }
 
-    // Загрузка данных при старте
-    window.onload = async () => {
-        // Запрашиваем текущий баланс и уровень у бота
+    // Улучшение завода
+    async function upgradeFactory(income, price, index) {
+        // Проверяем, достаточно ли средств (локально)
+        if (currentBalance < price) {
+            tg.showAlert(`❌ Недостаточно средств! Нужно ${price.toLocaleString()}$`);
+            return;
+        }
+        // Отправляем команду /upgrade боту
+        sendCommand('/upgrade');
+        
+        // Локально обновляем данные
+        currentIncome = income;
+        currentLevel = index + 1;
+        currentBalance -= price;
+        updateBalanceDisplay();
+        renderUpgrades();
+        
+        tg.showAlert(`✅ Завод улучшен до уровня ${currentLevel}! Доход за клик: ${currentIncome}$`);
+    }
+
+    // Загрузка начальных данных: баланс и уровень завода
+    async function loadInitialData() {
+        // Запрашиваем данные у бота
         sendCommand('/balance');
         sendCommand('/get_factory_level');
         
-        // Показываем заглушку
-        document.getElementById('balance').innerText = '?';
-    };
+        // Показываем заглушку, пока нет ответа
+        document.getElementById('balance').innerText = '...';
+        document.getElementById('clickIncome').innerText = '...';
+        
+        // В реальном приложении здесь нужно слушать ответы от бота через onMessage.
+        // Так как Telegram Mini App не получает ответы напрямую, пользователь увидит ответ в чате.
+        // Для удобства, после отправки запроса можно показать инструкцию.
+        setTimeout(() => {
+            tg.showAlert('Баланс и уровень завода будут показаны в чате бота. Нажмите на завод для заработка!');
+        }, 500);
+        
+        // Имитация получения данных из localStorage (если есть)
+        try {
+            const savedLevel = localStorage.getItem('factory_level');
+            const savedBalance = localStorage.getItem('balance');
+            if (savedLevel !== null) {
+                currentLevel = parseInt(savedLevel);
+                currentIncome = [1,2,4,6,10,15,20,50,100][currentLevel] || 1;
+                renderUpgrades();
+            }
+            if (savedBalance !== null) {
+                currentBalance = parseInt(savedBalance);
+                updateBalanceDisplay();
+            }
+        } catch(e) {}
+    }
 
-    // Обработчики кнопок
-    document.getElementById('clickCircle').addEventListener('click', tap);
+    // Сохранение данных в localStorage при каждом клике и улучшении
+    function saveLocalData() {
+        localStorage.setItem('factory_level', currentLevel);
+        localStorage.setItem('balance', currentBalance);
+    }
+
+    // Обработчик клика по кнопкам вывода
     document.getElementById('withdraw15Btn').addEventListener('click', () => sendCommand('/withdraw 15'));
     document.getElementById('withdraw25Btn').addEventListener('click', () => sendCommand('/withdraw 25'));
+    
+    // Обработчик клика по заводу
+    document.getElementById('clickCircle').addEventListener('click', (e) => {
+        tap(e);
+        saveLocalData();
+    });
 
+    // Переопределяем upgradeFactory для сохранения
+    const originalUpgrade = upgradeFactory;
+    window.upgradeFactory = async (income, price, index) => {
+        await originalUpgrade(income, price, index);
+        saveLocalData();
+    };
+    upgradeFactory = window.upgradeFactory;
+
+    // Запуск
+    loadInitialData();
     renderUpgrades();
+    
+    // Дополнительно: каждые 5 секунд можно синхронизировать баланс (опционально)
+    setInterval(() => {
+        sendCommand('/balance');
+        sendCommand('/get_factory_level');
+    }, 30000);
 </script>
 </body>
 </html>
